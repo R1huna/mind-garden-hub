@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useTags } from '@/hooks/useTags';
@@ -20,10 +19,9 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
 export default function NotesPage() {
-  const { user } = useAuthContext();
-  const { notes, createNote, deleteNote } = useNotes(user?.id);
-  const { createReviewEvents, deleteEventsByNoteId } = useCalendarEvents(user?.id);
-  const { tags: userTags, createTag } = useTags(user?.id);
+  const { notes, createNote, deleteNote } = useNotes();
+  const { createReviewEvents, deleteEventsByNoteId } = useCalendarEvents();
+  const { tags: userTags, createTag } = useTags();
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');

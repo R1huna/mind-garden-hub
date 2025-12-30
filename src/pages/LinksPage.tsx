@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useLinks } from '@/hooks/useLinks';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
@@ -28,10 +27,9 @@ import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 
 export default function LinksPage() {
-  const { user } = useAuthContext();
-  const { links, createLink, deleteLink } = useLinks(user?.id);
-  const { notes } = useNotes(user?.id);
-  const { tags: userTags, createTag } = useTags(user?.id);
+  const { links, createLink, deleteLink } = useLinks();
+  const { notes } = useNotes();
+  const { tags: userTags, createTag } = useTags();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);

@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -10,12 +10,14 @@ import {
   BookOpen,
   ChevronLeft,
   Menu,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: '대시보드', path: '/' },
+  { icon: LayoutDashboard, label: '대시보드', path: '/dashboard' },
   { icon: Calendar, label: '달력', path: '/calendar' },
   { icon: FileText, label: '노트', path: '/notes' },
   { icon: Link2, label: '링크 모음', path: '/links' },
@@ -25,7 +27,14 @@ const menuItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <>
@@ -108,6 +117,23 @@ export function Sidebar() {
               );
             })}
           </nav>
+
+          {/* Logout button */}
+          <div className="p-2 border-t border-border">
+            <button
+              onClick={handleLogout}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full',
+                'hover:bg-destructive/10 hover:text-destructive text-muted-foreground',
+                isCollapsed && 'lg:justify-center lg:px-2'
+              )}
+            >
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && (
+                <span className="text-sm font-medium">로그아웃</span>
+              )}
+            </button>
+          </div>
         </div>
       </aside>
     </>

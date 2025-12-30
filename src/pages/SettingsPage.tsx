@@ -1,13 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { Sun, Moon, Monitor, User, Database } from 'lucide-react';
+import { Sun, Moon, Database } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { user } = useAuthContext();
 
   const handleClearData = () => {
     if (confirm('모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -23,32 +21,6 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-foreground">설정</h1>
-
-      {/* Account Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            계정 정보
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">이메일</span>
-              <span className="font-medium">{user?.email}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">가입일</span>
-              <span className="font-medium">
-                {user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString('ko-KR')
-                  : '-'}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Theme Settings */}
       <Card>

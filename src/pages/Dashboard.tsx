@@ -1,5 +1,4 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useTags } from '@/hooks/useTags';
@@ -9,10 +8,9 @@ import { ko } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { user } = useAuthContext();
-  const { notes } = useNotes(user?.id);
-  const { events } = useCalendarEvents(user?.id);
-  const { tags } = useTags(user?.id);
+  const { notes } = useNotes();
+  const { events } = useCalendarEvents();
+  const { tags } = useTags();
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });

@@ -1,6 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useAuthContext } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -8,7 +7,6 @@ import {
   Link2,
   Tags,
   Settings,
-  LogOut,
   BookOpen,
   ChevronLeft,
   Menu,
@@ -27,7 +25,6 @@ const menuItems = [
 
 export function Sidebar() {
   const location = useLocation();
-  const { logout } = useAuthContext();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
@@ -111,23 +108,6 @@ export function Sidebar() {
               );
             })}
           </nav>
-
-          {/* Logout */}
-          <div className="p-2 border-t border-border">
-            <button
-              onClick={logout}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full',
-                'hover:bg-destructive/10 hover:text-destructive text-muted-foreground',
-                isCollapsed && 'lg:justify-center lg:px-2'
-              )}
-            >
-              <LogOut className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="text-sm font-medium">로그아웃</span>
-              )}
-            </button>
-          </div>
         </div>
       </aside>
     </>

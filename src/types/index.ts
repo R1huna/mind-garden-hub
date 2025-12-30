@@ -1,12 +1,5 @@
-export interface User {
-  id: string;
-  email: string;
-  createdAt: string;
-}
-
 export interface Note {
   id: string;
-  userId: string;
   title: string;
   content: string;
   tags: string[];
@@ -16,7 +9,6 @@ export interface Note {
 
 export interface CalendarEvent {
   id: string;
-  userId: string;
   title: string;
   date: string;
   linkedNoteId: string | null;
@@ -26,7 +18,6 @@ export interface CalendarEvent {
 
 export interface Link {
   id: string;
-  userId: string;
   url: string;
   title: string;
   description: string;
@@ -37,12 +28,6 @@ export interface Link {
 
 export interface Tag {
   id: string;
-  userId: string;
   name: string;
   color: string;
-}
-
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
 }

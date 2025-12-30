@@ -12,33 +12,22 @@ const DEFAULT_COLORS = [
   'hsl(30, 70%, 50%)',
 ];
 
-export function useTags(userId: string | undefined) {
+export function useTags() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setTags([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const allTags = getStorageItem<Tag[]>(STORAGE_KEYS.TAGS) || [];
-    const userTags = allTags.filter(t => t.userId === userId);
-    setTags(userTags);
+    const storedTags = getStorageItem<Tag[]>(STORAGE_KEYS.TAGS) || [];
+    setTags(storedTags);
     setIsLoading(false);
-  }, [userId]);
+  }, []);
 
   const saveTags = useCallback((updatedTags: Tag[]) => {
-    const allTags = getStorageItem<Tag[]>(STORAGE_KEYS.TAGS) || [];
-    const otherUserTags = allTags.filter(t => t.userId !== userId);
-    setStorageItem(STORAGE_KEYS.TAGS, [...otherUserTags, ...updatedTags]);
+    setStorageItem(STORAGE_KEYS.TAGS, updatedTags);
     setTags(updatedTags);
-  }, [userId]);
+  }, []);
 
   const createTag = useCallback((name: string, color?: string): Tag => {
-    if (!userId) throw new Error('User not authenticated');
-
     // Check if tag already exists
     if (tags.some(t => t.name.toLowerCase() === name.toLowerCase())) {
       throw new Error('이미 존재하는 태그입니다.');
@@ -46,7 +35,6 @@ export function useTags(userId: string | undefined) {
 
     const newTag: Tag = {
       id: crypto.randomUUID(),
-      userId,
       name,
       color: color || DEFAULT_COLORS[tags.length % DEFAULT_COLORS.length],
     };
@@ -54,14 +42,14 @@ export function useTags(userId: string | undefined) {
     const updatedTags = [...tags, newTag];
     saveTags(updatedTags);
     return newTag;
-  }, [userId, tags, saveTags]);
+  }, [tags, saveTags]);
 
   const deleteTag = useCallback((id: string) => {
     const updatedTags = tags.filter(t => t.id !== id);
     saveTags(updatedTags);
   }, [tags, saveTags]);
 
-  const updateTag = useCallback((id: string, updates: Partial<Omit<Tag, 'id' | 'userId'>>) => {
+  const updateTag = useCallback((id: string, updates: Partial<Omit<Tag, 'id'>>) => {
     const updatedTags = tags.map(tag =>
       tag.id === id ? { ...tag, ...updates } : tag
     );

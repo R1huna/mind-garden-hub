@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
 import { ArrowLeft, Save, Plus, X, Link2 } from 'lucide-react';
@@ -16,9 +15,8 @@ import { debounce } from '@/lib/utils';
 export default function NoteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const { notes, getNoteById, updateNote } = useNotes(user?.id);
-  const { tags: userTags, createTag } = useTags(user?.id);
+  const { notes, getNoteById, updateNote } = useNotes();
+  const { tags: userTags, createTag } = useTags();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -29,6 +27,15 @@ export default function NoteDetail() {
 
   const note = id ? getNoteById(id) : undefined;
 
+  // Create debounced save function with useRef to avoid recreation
+  const debouncedSaveRef = useRef(
+    debounce((noteId: string, updates: { title?: string; content?: string; tags?: string[] }) => {
+      updateNote(noteId, updates);
+      setLastSaved(new Date());
+      setIsSaving(false);
+    }, 1000)
+  );
+
   useEffect(() => {
     if (note) {
       setTitle(note.title);
@@ -37,21 +44,11 @@ export default function NoteDetail() {
     }
   }, [note]);
 
-  // Auto-save with debounce
-  const debouncedSave = useCallback(
-    debounce((noteId: string, updates: { title?: string; content?: string; tags?: string[] }) => {
-      updateNote(noteId, updates);
-      setLastSaved(new Date());
-      setIsSaving(false);
-    }, 1000),
-    [updateNote]
-  );
-
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     if (id) {
       setIsSaving(true);
-      debouncedSave(id, { title: newTitle, content, tags });
+      debouncedSaveRef.current(id, { title: newTitle, content, tags });
     }
   };
 
@@ -59,7 +56,7 @@ export default function NoteDetail() {
     setContent(newContent);
     if (id) {
       setIsSaving(true);
-      debouncedSave(id, { title, content: newContent, tags });
+      debouncedSaveRef.current(id, { title, content: newContent, tags });
     }
   };
 

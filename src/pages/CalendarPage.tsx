@@ -19,20 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function CalendarPage() {
-  const { user } = useAuthContext();
-  const { events, createEvent, deleteEvent, getEventsByDate } = useCalendarEvents(user?.id);
-  const { notes } = useNotes(user?.id);
-  const { tags } = useTags(user?.id);
+  const { events, createEvent, deleteEvent, getEventsByDate } = useCalendarEvents();
+  const { notes } = useNotes();
+  const { tags } = useTags();
   const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());

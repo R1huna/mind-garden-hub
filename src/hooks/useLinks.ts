@@ -2,29 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from '@/types';
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/storage';
 
-export function useLinks(userId: string | undefined) {
+export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setLinks([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const allLinks = getStorageItem<Link[]>(STORAGE_KEYS.LINKS) || [];
-    const userLinks = allLinks.filter(l => l.userId === userId);
-    setLinks(userLinks);
+    const storedLinks = getStorageItem<Link[]>(STORAGE_KEYS.LINKS) || [];
+    setLinks(storedLinks);
     setIsLoading(false);
-  }, [userId]);
+  }, []);
 
   const saveLinks = useCallback((updatedLinks: Link[]) => {
-    const allLinks = getStorageItem<Link[]>(STORAGE_KEYS.LINKS) || [];
-    const otherUserLinks = allLinks.filter(l => l.userId !== userId);
-    setStorageItem(STORAGE_KEYS.LINKS, [...otherUserLinks, ...updatedLinks]);
+    setStorageItem(STORAGE_KEYS.LINKS, updatedLinks);
     setLinks(updatedLinks);
-  }, [userId]);
+  }, []);
 
   const createLink = useCallback((
     url: string,
@@ -33,8 +24,6 @@ export function useLinks(userId: string | undefined) {
     tags: string[] = [],
     linkedNoteId: string | null = null
   ): Link => {
-    if (!userId) throw new Error('User not authenticated');
-
     // Validate URL
     try {
       new URL(url);
@@ -44,7 +33,6 @@ export function useLinks(userId: string | undefined) {
 
     const newLink: Link = {
       id: crypto.randomUUID(),
-      userId,
       url,
       title,
       description,
@@ -56,14 +44,14 @@ export function useLinks(userId: string | undefined) {
     const updatedLinks = [...links, newLink];
     saveLinks(updatedLinks);
     return newLink;
-  }, [userId, links, saveLinks]);
+  }, [links, saveLinks]);
 
   const deleteLink = useCallback((id: string) => {
     const updatedLinks = links.filter(l => l.id !== id);
     saveLinks(updatedLinks);
   }, [links, saveLinks]);
 
-  const updateLink = useCallback((id: string, updates: Partial<Omit<Link, 'id' | 'userId' | 'createdAt'>>) => {
+  const updateLink = useCallback((id: string, updates: Partial<Omit<Link, 'id' | 'createdAt'>>) => {
     const updatedLinks = links.map(link =>
       link.id === id ? { ...link, ...updates } : link
     );

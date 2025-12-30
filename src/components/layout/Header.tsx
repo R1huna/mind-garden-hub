@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sun, Moon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
@@ -15,16 +14,14 @@ import {
 import { useNotes } from '@/hooks/useNotes';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useTags } from '@/hooks/useTags';
-import { useAuthContext } from '@/contexts/AuthContext';
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
-  const { notes } = useNotes(user?.id);
-  const { events } = useCalendarEvents(user?.id);
-  const { tags } = useTags(user?.id);
+  const { notes } = useNotes();
+  const { events } = useCalendarEvents();
+  const { tags } = useTags();
 
   const handleSelect = (type: string, id: string) => {
     setOpen(false);

@@ -11,12 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useNotes } from '@/hooks/useNotes';
-import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useLinks } from '@/hooks/useLinks';
 import { useTags } from '@/hooks/useTags';
-import { Plus, Tags, Trash2, Edit2, FileText, Calendar, Link2 } from 'lucide-react';
+import { Plus, Tags, Trash2, Edit2, FileText, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -35,11 +33,9 @@ export default function TagsPage() {
   const navigate = useNavigate();
   const filterTag = searchParams.get('filter');
 
-  const { user } = useAuthContext();
-  const { notes } = useNotes(user?.id);
-  const { events } = useCalendarEvents(user?.id);
-  const { links } = useLinks(user?.id);
-  const { tags, createTag, deleteTag, updateTag } = useTags(user?.id);
+  const { notes } = useNotes();
+  const { links } = useLinks();
+  const { tags, createTag, deleteTag, updateTag } = useTags();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);

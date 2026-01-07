@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
 import { ArrowLeft, Save, Plus, X, Link2 } from 'lucide-react';
@@ -24,12 +26,15 @@ export default function NoteDetail() {
   const [newTagInput, setNewTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isClassEnabled, setIsClassEnabled] = useState(false);
+  const [classroom, setClassroom] = useState('');
+  const [professor, setProfessor] = useState('');
 
   const note = id ? getNoteById(id) : undefined;
 
   // Create debounced save function with useRef to avoid recreation
   const debouncedSaveRef = useRef(
-    debounce((noteId: string, updates: { title?: string; content?: string; tags?: string[] }) => {
+    debounce((noteId: string, updates: { title?: string; content?: string; tags?: string[]; classroom?: string; professor?: string }) => {
       updateNote(noteId, updates);
       setLastSaved(new Date());
       setIsSaving(false);
@@ -41,8 +46,35 @@ export default function NoteDetail() {
       setTitle(note.title);
       setContent(note.content);
       setTags(note.tags);
+      setIsClassEnabled(note.isClassEnabled ?? false);
+      setClassroom(note.classroom ?? '');
+      setProfessor(note.professor ?? '');
     }
   }, [note]);
+
+  const handleClassToggle = (checked: boolean) => {
+    setIsClassEnabled(checked);
+    if (id) {
+      updateNote(id, { isClassEnabled: checked });
+      setLastSaved(new Date());
+    }
+  };
+
+  const handleClassroomChange = (value: string) => {
+    setClassroom(value);
+    if (id) {
+      setIsSaving(true);
+      debouncedSaveRef.current(id, { title, content, tags, classroom: value, professor });
+    }
+  };
+
+  const handleProfessorChange = (value: string) => {
+    setProfessor(value);
+    if (id) {
+      setIsSaving(true);
+      debouncedSaveRef.current(id, { title, content, tags, classroom, professor: value });
+    }
+  };
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
@@ -148,13 +180,57 @@ export default function NoteDetail() {
         </div>
       </div>
 
-      {/* Title */}
-      <Input
-        value={title}
-        onChange={(e) => handleTitleChange(e.target.value)}
-        className="text-2xl font-bold border-none bg-transparent px-0 focus-visible:ring-0"
-        placeholder="노트 제목"
-      />
+      {/* Title with Class Toggle */}
+      <div className="flex items-center justify-between gap-4">
+        <Input
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          className="text-2xl font-bold border-none bg-transparent px-0 focus-visible:ring-0 flex-1"
+          placeholder="노트 제목"
+        />
+        <div className="flex items-center gap-2 shrink-0">
+          <Label htmlFor="class-toggle" className="text-sm text-muted-foreground cursor-pointer">
+            수업
+          </Label>
+          <Switch
+            id="class-toggle"
+            checked={isClassEnabled}
+            onCheckedChange={handleClassToggle}
+          />
+        </div>
+      </div>
+
+      {/* Class Info Card - Conditional */}
+      {isClassEnabled && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Label htmlFor="classroom" className="w-16 text-sm shrink-0">
+                강의실
+              </Label>
+              <Input
+                id="classroom"
+                value={classroom}
+                onChange={(e) => handleClassroomChange(e.target.value)}
+                placeholder="강의실을 입력하세요"
+                className="flex-1"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Label htmlFor="professor" className="w-16 text-sm shrink-0">
+                교수
+              </Label>
+              <Input
+                id="professor"
+                value={professor}
+                onChange={(e) => handleProfessorChange(e.target.value)}
+                placeholder="교수명을 입력하세요"
+                className="flex-1"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tags */}
       <div className="flex flex-wrap items-center gap-2">

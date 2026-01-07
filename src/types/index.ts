@@ -1,8 +1,14 @@
 export interface Note {
   id: string;
   title: string;
+  subtitle?: string;
+  summary?: string;
   content: string;
   tags: string[];
+  isReviewEnabled: boolean;
+  isClassEnabled: boolean;
+  classroom?: string;
+  professor?: string;
   createdAt: string;
   updatedAt: string;
 }

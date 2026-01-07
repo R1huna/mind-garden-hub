@@ -16,7 +16,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useTags } from '@/hooks/useTags';
 import { format, parseISO } from 'date-fns';
-import { Plus, Search, FileText, Trash2 } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, MapPin, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -245,9 +245,33 @@ export default function NotesPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Subtitle */}
+                {note.subtitle && (
+                  <p className="text-sm text-muted-foreground font-medium mb-1">
+                    {note.subtitle}
+                  </p>
+                )}
+                {/* Summary or Content */}
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                  {note.content || '내용 없음'}
+                  {note.summary || note.content || '내용 없음'}
                 </p>
+                {/* Class Info - Only when isClassEnabled is true */}
+                {note.isClassEnabled && (note.classroom || note.professor) && (
+                  <div className="bg-primary/5 border border-primary/10 rounded-md p-2 mb-3 space-y-1">
+                    {note.classroom && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        <span>강의실: {note.classroom}</span>
+                      </div>
+                    )}
+                    {note.professor && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        <span>교수: {note.professor}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {note.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     {note.tags.slice(0, 3).map((tag) => {

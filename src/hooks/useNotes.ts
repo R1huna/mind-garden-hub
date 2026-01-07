@@ -23,6 +23,8 @@ export function useNotes() {
       title,
       content,
       tags,
+      isReviewEnabled: false,
+      isClassEnabled: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

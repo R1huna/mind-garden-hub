@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -19,10 +21,19 @@ import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
 export default function NotesPage() {
-  const { notes, createNote, deleteNote } = useNotes();
+  const { notes, createNote, deleteNote, updateNote } = useNotes();
   const { createReviewEvents, deleteEventsByNoteId } = useCalendarEvents();
   const { tags: userTags, createTag } = useTags();
   const navigate = useNavigate();
+
+  const handleReviewToggle = (e: React.MouseEvent, noteId: string, currentValue: boolean) => {
+    e.stopPropagation();
+    updateNote(noteId, { isReviewEnabled: !currentValue });
+    toast({
+      title: !currentValue ? '복습 활성화' : '복습 비활성화',
+      description: !currentValue ? '이 노트가 복습 목록에 추가되었습니다.' : '이 노트가 복습 목록에서 제거되었습니다.',
+    });
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -203,18 +214,34 @@ export default function NotesPage() {
               onClick={() => navigate(`/notes/${note.id}`)}
             >
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-base font-medium line-clamp-1">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base font-medium line-clamp-1 flex-1">
                     {note.title}
                   </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                    onClick={(e) => handleDeleteNote(e, note.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div 
+                      className="flex items-center gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Label htmlFor={`review-${note.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                        복습
+                      </Label>
+                      <Switch
+                        id={`review-${note.id}`}
+                        checked={note.isReviewEnabled ?? false}
+                        onCheckedChange={() => handleReviewToggle({} as React.MouseEvent, note.id, note.isReviewEnabled ?? false)}
+                        className="scale-75"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                      onClick={(e) => handleDeleteNote(e, note.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

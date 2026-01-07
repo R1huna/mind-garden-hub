@@ -19,6 +19,7 @@ import { format, parseISO } from 'date-fns';
 import { Plus, Search, FileText, Trash2, MapPin, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { LinkRenderer } from '@/components/LinkRenderer';
 
 export default function NotesPage() {
   const { notes, createNote, deleteNote, updateNote } = useNotes();
@@ -251,10 +252,10 @@ export default function NotesPage() {
                     {note.subtitle}
                   </p>
                 )}
-                {/* Summary or Content */}
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                  {note.summary || note.content || '내용 없음'}
-                </p>
+                {/* Summary or Content with Link Rendering */}
+                <div className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  <LinkRenderer text={note.summary || note.content || '내용 없음'} />
+                </div>
                 {/* Class Info - Only when isClassEnabled is true */}
                 {note.isClassEnabled && (note.classroom || note.professor) && (
                   <div className="bg-primary/5 border border-primary/10 rounded-md p-2 mb-3 space-y-1">

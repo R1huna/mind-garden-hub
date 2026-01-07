@@ -13,6 +13,7 @@ import { ArrowLeft, Save, Plus, X, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { debounce } from '@/lib/utils';
+import { LinkRenderer } from '@/components/LinkRenderer';
 
 export default function NoteDetail() {
   const { id } = useParams<{ id: string }>();

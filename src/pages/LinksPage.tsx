@@ -39,6 +39,7 @@ export default function LinksPage() {
   const [selectedNoteId, setSelectedNoteId] = useState<string>('none');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const filteredLinks = links.filter(
     (link) =>
@@ -48,7 +49,7 @@ export default function LinksPage() {
       link.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleCreateLink = () => {
+  const handleCreateLink = async () => {
     if (!newLinkUrl.trim() || !newLinkTitle.trim()) {
       toast({
         title: '오류',
@@ -58,8 +59,10 @@ export default function LinksPage() {
       return;
     }
 
+    setIsCreating(true);
+
     try {
-      createLink(
+      await createLink(
         newLinkUrl,
         newLinkTitle,
         newLinkDescription,
@@ -84,25 +87,27 @@ export default function LinksPage() {
         description: error instanceof Error ? error.message : '링크 추가에 실패했습니다.',
         variant: 'destructive',
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  const handleDeleteLink = (linkId: string) => {
-    deleteLink(linkId);
+  const handleDeleteLink = async (linkId: string) => {
+    await deleteLink(linkId);
     toast({
       title: '링크 삭제',
       description: '링크가 삭제되었습니다.',
     });
   };
 
-  const handleAddTag = () => {
+  const handleAddTag = async () => {
     if (!newTagInput.trim()) return;
 
     let tag = userTags.find((t) => t.name.toLowerCase() === newTagInput.toLowerCase());
 
     if (!tag) {
       try {
-        tag = createTag(newTagInput);
+        tag = await createTag(newTagInput);
       } catch (error) {
         toast({
           title: '오류',
@@ -113,7 +118,7 @@ export default function LinksPage() {
       }
     }
 
-    if (!selectedTags.includes(tag.name)) {
+    if (tag && !selectedTags.includes(tag.name)) {
       setSelectedTags([...selectedTags, tag.name]);
     }
     setNewTagInput('');
@@ -216,8 +221,8 @@ export default function LinksPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleCreateLink} className="w-full">
-                링크 추가
+              <Button onClick={handleCreateLink} className="w-full" disabled={isCreating}>
+                {isCreating ? '추가 중...' : '링크 추가'}
               </Button>
             </div>
           </DialogContent>

@@ -93,14 +93,14 @@ export default function NoteDetail() {
     }
   };
 
-  const handleAddTag = () => {
+  const handleAddTag = async () => {
     if (!newTagInput.trim()) return;
 
     let tag = userTags.find((t) => t.name.toLowerCase() === newTagInput.toLowerCase());
 
     if (!tag) {
       try {
-        tag = createTag(newTagInput);
+        tag = await createTag(newTagInput);
       } catch (error) {
         toast({
           title: '오류',
@@ -111,7 +111,7 @@ export default function NoteDetail() {
       }
     }
 
-    if (!tags.includes(tag.name)) {
+    if (tag && !tags.includes(tag.name)) {
       const newTags = [...tags, tag.name];
       setTags(newTags);
       if (id) {

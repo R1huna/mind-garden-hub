@@ -1,29 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from '@/types';
-import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/storage';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export interface Link {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  tags: string[];
+  linkedNoteId: string | null;
+  createdAt: string;
+}
 
 export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchLinks = useCallback(async () => {
+    if (!user) {
+      setLinks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { data, error } = await supabase
+      .from('links')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching links:', error);
+      setIsLoading(false);
+      return;
+    }
+
+    const formattedLinks: Link[] = (data || []).map((link) => ({
+      id: link.id,
+      url: link.url,
+      title: link.title,
+      description: link.description || '',
+      tags: [], // Tags are stored separately in note_tags, links don't have direct tags
+      linkedNoteId: link.note_id,
+      createdAt: link.created_at,
+    }));
+
+    setLinks(formattedLinks);
+    setIsLoading(false);
+  }, [user]);
 
   useEffect(() => {
-    const storedLinks = getStorageItem<Link[]>(STORAGE_KEYS.LINKS) || [];
-    setLinks(storedLinks);
-    setIsLoading(false);
-  }, []);
+    fetchLinks();
+  }, [fetchLinks]);
 
-  const saveLinks = useCallback((updatedLinks: Link[]) => {
-    setStorageItem(STORAGE_KEYS.LINKS, updatedLinks);
-    setLinks(updatedLinks);
-  }, []);
-
-  const createLink = useCallback((
+  const createLink = useCallback(async (
     url: string,
     title: string,
     description: string = '',
     tags: string[] = [],
     linkedNoteId: string | null = null
-  ): Link => {
+  ): Promise<Link | null> => {
+    if (!user) return null;
+
     // Validate URL
     try {
       new URL(url);
@@ -31,32 +71,69 @@ export function useLinks() {
       throw new Error('유효한 URL을 입력해주세요.');
     }
 
-    const newLink: Link = {
-      id: crypto.randomUUID(),
-      url,
-      title,
-      description,
+    const { data, error } = await supabase
+      .from('links')
+      .insert({
+        user_id: user.id,
+        url,
+        title,
+        description,
+        note_id: linkedNoteId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating link:', error);
+      throw new Error(error.message);
+    }
+
+    await fetchLinks();
+
+    return {
+      id: data.id,
+      url: data.url,
+      title: data.title,
+      description: data.description || '',
       tags,
-      linkedNoteId,
-      createdAt: new Date().toISOString(),
+      linkedNoteId: data.note_id,
+      createdAt: data.created_at,
     };
+  }, [user, fetchLinks]);
 
-    const updatedLinks = [...links, newLink];
-    saveLinks(updatedLinks);
-    return newLink;
-  }, [links, saveLinks]);
+  const deleteLink = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('links')
+      .delete()
+      .eq('id', id);
 
-  const deleteLink = useCallback((id: string) => {
-    const updatedLinks = links.filter(l => l.id !== id);
-    saveLinks(updatedLinks);
-  }, [links, saveLinks]);
+    if (error) {
+      console.error('Error deleting link:', error);
+      return;
+    }
 
-  const updateLink = useCallback((id: string, updates: Partial<Omit<Link, 'id' | 'createdAt'>>) => {
-    const updatedLinks = links.map(link =>
-      link.id === id ? { ...link, ...updates } : link
-    );
-    saveLinks(updatedLinks);
-  }, [links, saveLinks]);
+    await fetchLinks();
+  }, [fetchLinks]);
+
+  const updateLink = useCallback(async (id: string, updates: Partial<Omit<Link, 'id' | 'createdAt'>>) => {
+    const dbUpdates: Record<string, any> = {};
+    if (updates.url !== undefined) dbUpdates.url = updates.url;
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.linkedNoteId !== undefined) dbUpdates.note_id = updates.linkedNoteId;
+
+    const { error } = await supabase
+      .from('links')
+      .update(dbUpdates)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating link:', error);
+      return;
+    }
+
+    await fetchLinks();
+  }, [fetchLinks]);
 
   return {
     links,
@@ -64,5 +141,6 @@ export function useLinks() {
     createLink,
     deleteLink,
     updateLink,
+    refetch: fetchLinks,
   };
 }

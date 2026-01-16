@@ -41,6 +41,7 @@ export default function NotesPage() {
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const filteredNotes = notes.filter(
     (note) =>
@@ -49,7 +50,7 @@ export default function NotesPage() {
       note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleCreateNote = () => {
+  const handleCreateNote = async () => {
     if (!newNoteTitle.trim()) {
       toast({
         title: '오류',
@@ -59,34 +60,48 @@ export default function NotesPage() {
       return;
     }
 
-    const note = createNote(newNoteTitle, '', selectedTags);
-    
-    // Create review events
-    createReviewEvents(note.id, note.title, new Date());
+    setIsCreating(true);
 
-    setNewNoteTitle('');
-    setSelectedTags([]);
-    setIsDialogOpen(false);
+    try {
+      const note = await createNote(newNoteTitle, '', selectedTags);
+      
+      if (note) {
+        // Create review events
+        await createReviewEvents(note.id, note.title, new Date());
 
-    toast({
-      title: '노트 생성',
-      description: '새 노트가 생성되었습니다. 복습 일정도 자동 추가되었습니다.',
-    });
+        setNewNoteTitle('');
+        setSelectedTags([]);
+        setIsDialogOpen(false);
 
-    navigate(`/notes/${note.id}`);
+        toast({
+          title: '노트 생성',
+          description: '새 노트가 생성되었습니다. 복습 일정도 자동 추가되었습니다.',
+        });
+
+        navigate(`/notes/${note.id}`);
+      }
+    } catch (error) {
+      toast({
+        title: '오류',
+        description: '노트 생성에 실패했습니다.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
+  const handleDeleteNote = async (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
-    deleteNote(noteId);
-    deleteEventsByNoteId(noteId);
+    await deleteNote(noteId);
+    await deleteEventsByNoteId(noteId);
     toast({
       title: '노트 삭제',
       description: '노트와 관련 복습 일정이 삭제되었습니다.',
     });
   };
 
-  const handleAddTag = () => {
+  const handleAddTag = async () => {
     if (!newTagInput.trim()) return;
     
     // Check if tag exists in user's tags
@@ -94,7 +109,7 @@ export default function NotesPage() {
     
     if (!tag) {
       try {
-        tag = createTag(newTagInput);
+        tag = await createTag(newTagInput);
       } catch (error) {
         toast({
           title: '오류',
@@ -105,7 +120,7 @@ export default function NotesPage() {
       }
     }
 
-    if (!selectedTags.includes(tag.name)) {
+    if (tag && !selectedTags.includes(tag.name)) {
       setSelectedTags([...selectedTags, tag.name]);
     }
     setNewTagInput('');
@@ -175,8 +190,8 @@ export default function NotesPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleCreateNote} className="w-full">
-                노트 만들기
+              <Button onClick={handleCreateNote} className="w-full" disabled={isCreating}>
+                {isCreating ? '생성 중...' : '노트 만들기'}
               </Button>
             </div>
           </DialogContent>

@@ -1,32 +1,45 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/storage';
-
-interface User {
-  email: string;
-}
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  session: Session | null;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-interface StoredUser {
-  email: string;
-  password: string;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const signup = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Validate inputs
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signup = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     if (!email || !password) {
       return { success: false, error: '이메일과 비밀번호를 입력해주세요.' };
     }
@@ -35,49 +48,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: '비밀번호는 최소 6자 이상이어야 합니다.' };
     }
 
-    // Check if user already exists
-    const users = getStorageItem<StoredUser[]>('learnflow_users') || [];
-    const existingUser = users.find(u => u.email === email);
-    
-    if (existingUser) {
-      return { success: false, error: '이미 가입된 이메일입니다.' };
+    const redirectUrl = `${window.location.origin}/`;
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        return { success: false, error: '이미 가입된 이메일입니다.' };
+      }
+      return { success: false, error: error.message };
     }
 
-    // Store new user
-    users.push({ email, password });
-    setStorageItem('learnflow_users', users);
-
     return { success: true };
-  }, []);
+  };
 
-  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Validate inputs
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     if (!email || !password) {
       return { success: false, error: '이메일과 비밀번호를 입력해주세요.' };
     }
 
-    // Check credentials
-    const users = getStorageItem<StoredUser[]>('learnflow_users') || [];
-    const foundUser = users.find(u => u.email === email && u.password === password);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    if (!foundUser) {
-      return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        return { success: false, error: '이메일 또는 비밀번호가 올바르지 않습니다.' };
+      }
+      return { success: false, error: error.message };
     }
 
-    // Set authenticated state
-    setIsAuthenticated(true);
-    setUser({ email: foundUser.email });
-
     return { success: true };
-  }, []);
+  };
 
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    setUser(null);
-  }, []);
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated: !!session, 
+      user, 
+      session,
+      isLoading,
+      login, 
+      signup, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );

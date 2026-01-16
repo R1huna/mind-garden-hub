@@ -1,60 +1,122 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Tag } from '@/types';
-import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/storage';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
 
 const DEFAULT_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--accent))',
-  'hsl(220, 70%, 50%)',
-  'hsl(280, 70%, 50%)',
-  'hsl(340, 70%, 50%)',
-  'hsl(160, 70%, 40%)',
-  'hsl(30, 70%, 50%)',
+  '#3B82F6',
+  '#8B5CF6',
+  '#EC4899',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#06B6D4',
 ];
 
 export function useTags() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchTags = useCallback(async () => {
+    if (!user) {
+      setTags([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching tags:', error);
+      setIsLoading(false);
+      return;
+    }
+
+    const formattedTags: Tag[] = (data || []).map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      color: tag.color,
+    }));
+
+    setTags(formattedTags);
+    setIsLoading(false);
+  }, [user]);
 
   useEffect(() => {
-    const storedTags = getStorageItem<Tag[]>(STORAGE_KEYS.TAGS) || [];
-    setTags(storedTags);
-    setIsLoading(false);
-  }, []);
+    fetchTags();
+  }, [fetchTags]);
 
-  const saveTags = useCallback((updatedTags: Tag[]) => {
-    setStorageItem(STORAGE_KEYS.TAGS, updatedTags);
-    setTags(updatedTags);
-  }, []);
+  const createTag = useCallback(async (name: string, color?: string): Promise<Tag | null> => {
+    if (!user) return null;
 
-  const createTag = useCallback((name: string, color?: string): Tag => {
     // Check if tag already exists
-    if (tags.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    const existingTag = tags.find(t => t.name.toLowerCase() === name.toLowerCase());
+    if (existingTag) {
       throw new Error('이미 존재하는 태그입니다.');
     }
 
-    const newTag: Tag = {
-      id: crypto.randomUUID(),
-      name,
-      color: color || DEFAULT_COLORS[tags.length % DEFAULT_COLORS.length],
+    const { data, error } = await supabase
+      .from('tags')
+      .insert({
+        user_id: user.id,
+        name,
+        color: color || DEFAULT_COLORS[tags.length % DEFAULT_COLORS.length],
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating tag:', error);
+      throw new Error(error.message);
+    }
+
+    await fetchTags();
+
+    return {
+      id: data.id,
+      name: data.name,
+      color: data.color,
     };
+  }, [user, tags, fetchTags]);
 
-    const updatedTags = [...tags, newTag];
-    saveTags(updatedTags);
-    return newTag;
-  }, [tags, saveTags]);
+  const deleteTag = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('tags')
+      .delete()
+      .eq('id', id);
 
-  const deleteTag = useCallback((id: string) => {
-    const updatedTags = tags.filter(t => t.id !== id);
-    saveTags(updatedTags);
-  }, [tags, saveTags]);
+    if (error) {
+      console.error('Error deleting tag:', error);
+      return;
+    }
 
-  const updateTag = useCallback((id: string, updates: Partial<Omit<Tag, 'id'>>) => {
-    const updatedTags = tags.map(tag =>
-      tag.id === id ? { ...tag, ...updates } : tag
-    );
-    saveTags(updatedTags);
-  }, [tags, saveTags]);
+    await fetchTags();
+  }, [fetchTags]);
+
+  const updateTag = useCallback(async (id: string, updates: Partial<Omit<Tag, 'id'>>) => {
+    const { error } = await supabase
+      .from('tags')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating tag:', error);
+      return;
+    }
+
+    await fetchTags();
+  }, [fetchTags]);
 
   const getTagByName = useCallback((name: string): Tag | undefined => {
     return tags.find(t => t.name.toLowerCase() === name.toLowerCase());
@@ -67,5 +129,6 @@ export function useTags() {
     deleteTag,
     updateTag,
     getTagByName,
+    refetch: fetchTags,
   };
 }
